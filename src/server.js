@@ -4,16 +4,35 @@ import { sendToTelegram, formatLogMessage, startBotCommands } from './telegram.j
 
 const app = express();
 
+// CORS headers for cross-origin requests (localhost → Amvera)
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
 app.use(express.json());
 app.use(express.text({ type: '*/*' }));
+
+// CORS preflight — не логируем в Telegram, только отвечаем
+app.options('/log', (req, res) => {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.set(k, v));
+  res.sendStatus(204);
+});
+app.options('/log/*', (req, res) => {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.set(k, v));
+  res.sendStatus(204);
+});
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'telegram-bot-logs' });
 });
 
-// Main endpoint: receive payload and forward to Telegram
-app.all('/log', async (req, res) => {
+// Main endpoint: receive payload and forward to Telegram (только POST)
+app.post('/log', async (req, res) => {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.set(k, v));
   try {
     const type = (req.body && req.body.type) || req.query.type || undefined;
     const payload = {
@@ -34,7 +53,8 @@ app.all('/log', async (req, res) => {
 });
 
 // Optional: accept any path and log (e.g. /log/click, /log/event)
-app.all('/log/*', async (req, res) => {
+app.post('/log/*', async (req, res) => {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.set(k, v));
   try {
     const type = (req.body && req.body.type) || req.query.type || undefined;
     const payload = {
@@ -60,7 +80,7 @@ app.use((req, res) => {
 
 const server = app.listen(config.port, () => {
   console.log(`Server running at http://localhost:${config.port}`);
-  console.log(`POST/GET /log — send request data to Telegram`);
+  console.log(`POST /log — send request data to Telegram`);
   startBotCommands();
 });
 
