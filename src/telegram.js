@@ -72,56 +72,45 @@ export function startBotCommands() {
  * @param {object} payload - { type?, method, path, body?, query?, headers? }
  */
 export function formatLogMessage(payload) {
+  const body = payload?.body || {};
   const isFrontend = payload.type === 'frontend';
   const isBackend = payload.type === 'backend';
 
-  // Для фронта: просто показать сообщение, которое ты передал
+  // Frontend: ⚠️ Frontend {path} ошибка
   if (isFrontend) {
-    const msg = safeStringify(
-      payload?.body && typeof payload.body === 'object' && 'message' in payload.body
-        ? payload.body.message
-        : payload.body
-    );
+    const path = body.path || payload.path || '/';
+    const msg = body.message || safeStringify(body);
     const parts = [
-      '<b>⚠️ Frontend</b>',
-      `<code>${payload.method ?? 'POST'} ${payload.path ?? '/log'}</code>`,
+      '⚠️ <b>Frontend</b> <code>' + path + '</code> ошибка',
+      '',
+      msg ? `<pre>${msg}</pre>` : '',
     ];
-    if (msg) {
-      parts.push('', `<pre>${msg}</pre>`);
-    }
-    return parts.join('\n');
+    return parts.filter(Boolean).join('\n');
   }
 
-  const title = isBackend ? '💥 Ошибка на бэкенде' : '📩 Новый запрос';
+  // Backend: 🔴 Backend {api endpoint} + body ошибки (без headers)
+  if (isBackend) {
+    const err = body.error || body;
+    const endpoint = err.url || err.message || payload.path || '/';
+    const lines = ['🔴 <b>Backend</b> <code>' + endpoint + '</code>', ''];
 
+    const bodyStr = safeStringify(err);
+    if (bodyStr && bodyStr !== '{}') {
+      const truncated = bodyStr.length > 3500 ? bodyStr.slice(0, 3500) + '...' : bodyStr;
+      lines.push('<pre>' + truncated + '</pre>');
+    }
+    return lines.join('\n');
+  }
+
+  // Fallback для других типов
+  const title = '📩 Новый запрос';
   const lines = [
     `<b>${title}</b>`,
     `<code>${payload.method ?? 'GET'} ${payload.path ?? '/'}</code>`,
   ];
-
-  if (payload.type) {
-    lines.push(`\n<b>Тип:</b> <code>${payload.type}</code>`);
-  }
-
-  if (payload.query && Object.keys(payload.query).length > 0) {
-    const queryStr = safeStringify(payload.query);
-    lines.push(`\n<b>Query:</b>\n<pre>${queryStr}</pre>`);
-  }
   if (payload.body !== undefined && payload.body !== null) {
     const bodyStr = safeStringify(payload.body);
-    if (bodyStr.length > 3500) {
-      lines.push(`\n<b>Body:</b>\n<pre>${bodyStr.slice(0, 3500)}...</pre>`);
-    } else {
-      lines.push(`\n<b>Body:</b>\n<pre>${bodyStr}</pre>`);
-    }
-  }
-  if (payload.headers && Object.keys(payload.headers).length > 0) {
-    const headersStr = safeStringify(payload.headers);
-    if (headersStr.length > 500) {
-      lines.push(`\n<b>Headers:</b>\n<pre>${headersStr.slice(0, 500)}...</pre>`);
-    } else {
-      lines.push(`\n<b>Headers:</b>\n<pre>${headersStr}</pre>`);
-    }
+    lines.push('\n<b>Body:</b>\n<pre>' + (bodyStr.length > 3500 ? bodyStr.slice(0, 3500) + '...' : bodyStr) + '</pre>');
   }
   return lines.join('\n');
 }
