@@ -1,0 +1,21 @@
+{
+  "name": "telegram-bot-click-avto-logs",
+  "version": "1.0.0",
+  "description": "Node server that receives requests and forwards them to Telegram bot",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": ["telegram", "bot", "logs"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}
