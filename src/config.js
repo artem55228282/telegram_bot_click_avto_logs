@@ -12,7 +12,9 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-const CHAT_ID_FILE = path.join(process.cwd(), '.telegram-chat-id');
+// В облаке Amvera используем /data для сохранения между пересборками
+const CHAT_ID_FILE =
+  fs.existsSync('/data') ? '/data/.telegram-chat-id' : path.join(process.cwd(), '.telegram-chat-id');
 
 /** Чат для логов: сначала из файла (если бот добавлен в группу), иначе из .env */
 export function getChatId() {

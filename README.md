@@ -70,3 +70,28 @@ curl "http://localhost:3000/log?action=open&id=123"
 - **Добавить в группу** — бот сам подхватывает чат и пишет логи туда (ничего вручную настраивать не нужно).
 - **`/chatid`** — бот присылает ID чата/группы (удобно, если хочешь прописать TELEGRAM_CHAT_ID в `.env` вручную).
 - **`/start`** — то же, что `/chatid`.
+
+---
+
+## Развёртывание на Amvera Cloud
+
+Проект уже содержит `amvera.yaml`. [Amvera Cloud](https://cloud.amvera.ru/) разворачивает его из Git.
+
+### Шаги
+
+1. **Git подключён** — репозиторий уже добавлен в Amvera.
+
+2. **Переменные окружения** — в панели Amvera: приложение → «Настройки» или «Переменные» → добавь:
+   - `TELEGRAM_BOT_TOKEN` — токен от @BotFather (обязательно)
+   - `TELEGRAM_CHAT_ID` — необязательно; можно не указывать и добавить бота в группу после деплоя
+
+3. **Сборка и запуск** — при пуше в `master` сборка запускается автоматически. Либо вручную: «Пересобрать проект» или «Собрать» в разделе «Конфигурация».
+
+4. **После запуска** — добавь бота в группу; он сам подхватит ID (на Amvera ID сохраняется в `/data` между пересборками).
+
+5. **URL приложения** — в панели Amvera посмотри домен (например `your-app.amvera.app`). Endpoint логов: `https://your-app.amvera.app/log`.
+
+### Документация
+
+- [Node.JS Server в Amvera](https://docs.amvera.ru/applications/environments/nodejs-server.html)
+- [Конфигурация amvera.yaml](https://docs.amvera.ru/applications/configuration/config-file.html)
