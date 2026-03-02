@@ -15,7 +15,9 @@ app.get('/health', (req, res) => {
 // Main endpoint: receive payload and forward to Telegram
 app.all('/log', async (req, res) => {
   try {
+    const type = (req.body && req.body.type) || req.query.type || undefined;
     const payload = {
+      type,
       method: req.method,
       path: req.path,
       query: Object.keys(req.query).length ? req.query : undefined,
@@ -34,7 +36,9 @@ app.all('/log', async (req, res) => {
 // Optional: accept any path and log (e.g. /log/click, /log/event)
 app.all('/log/*', async (req, res) => {
   try {
+    const type = (req.body && req.body.type) || req.query.type || undefined;
     const payload = {
+      type,
       method: req.method,
       path: req.originalUrl,
       query: Object.keys(req.query).length ? req.query : undefined,

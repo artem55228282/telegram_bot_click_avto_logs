@@ -3,6 +3,14 @@ import { config, getChatId, setChatId } from './config.js';
 
 const bot = new TelegramBot(config.telegram.botToken, { polling: false });
 
+function safeStringify(value) {
+  try {
+    return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 /**
  * Send text message to configured Telegram chat (group or user).
  * Chat ID берётся из файла .telegram-chat-id (если бот добавлен в группу) или из TELEGRAM_CHAT_ID в .env.
@@ -61,19 +69,46 @@ export function startBotCommands() {
 
 /**
  * Format incoming request as a readable message for Telegram
- * @param {object} payload - { method, path, body?, query?, headers? }
+ * @param {object} payload - { type?, method, path, body?, query?, headers? }
  */
 export function formatLogMessage(payload) {
+  const isFrontend = payload.type === 'frontend';
+  const isBackend = payload.type === 'backend';
+
+  // Для фронта: просто показать сообщение, которое ты передал
+  if (isFrontend) {
+    const msg = safeStringify(
+      payload?.body && typeof payload.body === 'object' && 'message' in payload.body
+        ? payload.body.message
+        : payload.body
+    );
+    const parts = [
+      '<b>⚠️ Frontend</b>',
+      `<code>${payload.method ?? 'POST'} ${payload.path ?? '/log'}</code>`,
+    ];
+    if (msg) {
+      parts.push('', `<pre>${msg}</pre>`);
+    }
+    return parts.join('\n');
+  }
+
+  const title = isBackend ? '💥 Ошибка на бэкенде' : '📩 Новый запрос';
+
   const lines = [
-    `<b>📩 Новый запрос</b>`,
+    `<b>${title}</b>`,
     `<code>${payload.method ?? 'GET'} ${payload.path ?? '/'}</code>`,
   ];
+
+  if (payload.type) {
+    lines.push(`\n<b>Тип:</b> <code>${payload.type}</code>`);
+  }
+
   if (payload.query && Object.keys(payload.query).length > 0) {
-    lines.push(`\n<b>Query:</b>\n<pre>${JSON.stringify(payload.query, null, 2)}</pre>`);
+    const queryStr = safeStringify(payload.query);
+    lines.push(`\n<b>Query:</b>\n<pre>${queryStr}</pre>`);
   }
   if (payload.body !== undefined && payload.body !== null) {
-    const bodyStr =
-      typeof payload.body === 'string' ? payload.body : JSON.stringify(payload.body, null, 2);
+    const bodyStr = safeStringify(payload.body);
     if (bodyStr.length > 3500) {
       lines.push(`\n<b>Body:</b>\n<pre>${bodyStr.slice(0, 3500)}...</pre>`);
     } else {
@@ -81,7 +116,7 @@ export function formatLogMessage(payload) {
     }
   }
   if (payload.headers && Object.keys(payload.headers).length > 0) {
-    const headersStr = JSON.stringify(payload.headers, null, 2);
+    const headersStr = safeStringify(payload.headers);
     if (headersStr.length > 500) {
       lines.push(`\n<b>Headers:</b>\n<pre>${headersStr.slice(0, 500)}...</pre>`);
     } else {
